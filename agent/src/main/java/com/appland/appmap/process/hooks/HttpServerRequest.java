@@ -13,6 +13,8 @@ import com.appland.appmap.transform.annotations.HookClass;
 import com.appland.appmap.transform.annotations.MethodEvent;
 import com.appland.appmap.transform.annotations.Unique;
 import com.appland.appmap.util.Logger;
+import java.util.HashMap;
+import java.util.StringTokenizer;
 
 /**
  * Hooks to capture @{code http_server_request} and @{code http_server_response}
@@ -36,16 +38,35 @@ public class HttpServerRequest {
 
   private static final String LAST_EVENT_KEY = "com.appland.appmap.lastEvent";
   private static final Recorder recorder = Recorder.getInstance();
+  private static final Map<String, Boolean> recordedUris = new HashMap<>();
+
 
   private static void recordHttpServerRequest(Event event, HttpServletRequest req) {
     if (req.getRequestURI().endsWith(RemoteRecordingManager.RecordRoute)) {
       return;
     }
 
-    recordHttpServerRequest(event, req,
+    String uri = rreq.getRequestURI();
+    String method = req.getMethod();
+
+    StringTokenizer tokenizer = new StringTokenizer(uri, "/");
+    String[] parts = new String[tokenizer.countTokens()];
+    for (int i = 0; i < parts.length; i++) {
+      parts[i] = tokenizer.nextToken().replaceAll("\\d+", "");
+    }
+
+    String combinedUri = String.join("/", parts) + method;
+    boolean processUri = !recordedUris.containsKey(combinedUri);
+
+    if (processUri) {
+      recordedUris.put(combinedUri, true);
+      event.setHttpClientRequest(req.getMethod(), uri);
+      recordHttpServerRequest(event, req,
         req.getMethod(), req.getRequestURI(), req.getProtocol(),
         req.getHeaders(),
         req.getParameterMap());
+    } 
+
   }
 
   private static void recordHttpServerRequest(Event event, HttpServletRequest req,
