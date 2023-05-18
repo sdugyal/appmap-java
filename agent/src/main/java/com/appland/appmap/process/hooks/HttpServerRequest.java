@@ -46,7 +46,7 @@ public class HttpServerRequest {
       return;
     }
 
-    String uri = rreq.getRequestURI();
+    String uri = req.getRequestURI();
     String method = req.getMethod();
 
     StringTokenizer tokenizer = new StringTokenizer(uri, "/");
